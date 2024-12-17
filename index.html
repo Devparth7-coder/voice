@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Voice Response</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #ffefba, #ffffff);
+        }
+        
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .output {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        #textInput {
+            margin-top: 10px;
+            padding: 10px;
+            width: 70%;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        #response {
+            margin-top: 20px;
+            font-size: 16px;
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Advanced Interactive Voice Response</h2>
+        <button onclick="startListening()">Start Listening</button>
+        <br>
+        <input type="text" id="textInput" placeholder="Type something..." onkeydown="handleTextInput(event)">
+        <div class="output" id="response"></div>
+    </div>
+
+    <script>
+        // Responses for recognized patterns
+        const responses = {
+            "hi": "Hi there!",
+            "hello": "Hello! How can I assist you?",
+            "what is your name": "My name is Dev Parth.",
+            "how are you": "I'm just a program, but I'm doing great!",
+            "tell me a joke": "Why don't skeletons fight each other? They don’t have the guts!",
+            "goodbye": "Goodbye! Have a great day!"
+        };
+
+        let conversationHistory = [];
+
+        function getResponse(userInput) {
+            const normalizedInput = userInput.toLowerCase().trim();
+
+            // Check for exact matches first
+            if (responses[normalizedInput]) {
+                return responses[normalizedInput];
+            }
+
+            // Check for dynamic phrase matching
+            if (normalizedInput.includes("my name is")) {
+                const name = normalizedInput.replace("my name is", "").trim();
+                return `Nice to meet you, ${name}!`;
+            }
+
+            // If no match found, return a generic response
+            return `Sorry, I didn't quite catch that. Can you rephrase or ask something else?`;
+        }
+
+        function startListening() {
+            const recognition = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "en-US";
+            recognition.continuous = false; // Only listen for a single input
+
+            recognition.onstart = () => {
+                document.getElementById("response").textContent = "Listening... Please speak now.";
+            };
+
+            recognition.onresult = (event) => {
+                const spokenText = event.results[event.results.length - 1][0].transcript;
+                document.getElementById("response").textContent = `You said: ${spokenText}`;
+
+                // Store conversation history
+                conversationHistory.push(`User: ${spokenText}`);
+
+                // Get and display system's response
+                const response = getResponse(spokenText);
+                conversationHistory.push(`Bot: ${response}`);
+                speakResponse(response);
+                document.getElementById("response").textContent += `\nResponse: ${response}`;
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                document.getElementById("response").textContent = "Sorry, I couldn't hear you properly. Please try again.";
+            };
+
+            recognition.start();
+        }
+
+        function handleTextInput(event) {
+            if (event.key === "Enter") {
+                const textInput = document.getElementById("textInput").value;
+                if (textInput.trim() === "") {
+                    document.getElementById("response").textContent = "";
+                    return;
+                }
+
+                // Store conversation history for text input
+                conversationHistory.push(`User: ${textInput}`);
+
+                // Get and display the response based on text input
+                const response = getResponse(textInput);
+                conversationHistory.push(`Bot: ${response}`);
+                document.getElementById("response").textContent = `You typed: ${textInput}\nResponse: ${response}`;
+                speakResponse(response);
+            }
+        }
+
+        function speakResponse(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function getConversationHistory() {
+            return conversationHistory.join('\n');
+        }
+    </script>
+</body>
+
+</html>
